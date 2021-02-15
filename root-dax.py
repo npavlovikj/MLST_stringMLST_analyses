@@ -105,10 +105,9 @@ length = len(input_file.readlines())
 dax.addDependency(Dependency(parent=conda_run, child=stringmlst_db_run))
 for i in range(0,length):
     # Add control-flow dependencies
-    # dax.addDependency(Dependency(parent=conda_run, child=trim_run[i]))
-    # USE THE LINE ABOVE AND COMMENT OUT THE 2 LINES BELOW TO SKIP NCBI DOWNLOAD!!!
-    # dax.addDependency(Dependency(parent=conda_run, child=sra_run[i]))
+    dax.addDependency(Dependency(parent=conda_run, child=sra_run[i]))
     dax.addDependency(Dependency(parent=stringmlst_db_run, child=stringmlst_run[i]))
+    dax.addDependency(Dependency(parent=sra_run[i], child=stringmlst_run[i]))
     dax.addDependency(Dependency(parent=stringmlst_run[i], child=cat))
 dax.addDependency(Dependency(parent=cat, child=merge_stringmlst_run))
 
