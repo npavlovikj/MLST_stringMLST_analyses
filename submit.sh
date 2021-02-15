@@ -58,7 +58,6 @@ cat > sites.xml <<EOF
         <profile namespace="pegasus" key="style">glite</profile>
         <!-- tell pegasus that local-hcc is accessible on submit host -->
         <profile namespace="pegasus" key="auxillary.local">true</profile>
-        <profile namespace="pegasus" key="glite.arguments">--licenses=common</profile>
         <profile namespace="condor" key="grid_resource">batch slurm</profile>
         <profile namespace="pegasus" key="queue">batch</profile>
         <profile namespace="env" key="PEGASUS_HOME">/usr</profile>
