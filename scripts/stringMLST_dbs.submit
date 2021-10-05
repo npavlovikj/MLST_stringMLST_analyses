@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=10gb
+
+module purge
+module load stringmlst/0.6
+
+# $1 is PubMLST scheme
+# $2 is organism name since that is how inputs and outputs are organized
+# $3 is kmer value
+stringMLST.py --getMLST --species="$1" -P "$2"_"$3" -k "$3"
+# e.g. stringMLST.py --getMLST --species="Salmonella enterica" -P salmonella_45 -k 45

@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=50gb
+
+# input directoy with raw reads
+DATA="/directory_raw_reads/"
+# sra id
+srr_id=$1
+# organism, since that is how the inputs and outputs are organized
+org=$2
+
+t=`date +%s`
+# do trimming 
+module purge 
+module load trimmomatic/0.38
+trimmomatic PE -threads 1 ${DATA}/${org}/${srr_id}_1.fastq ${DATA}/${org}/${srr_id}_2.fastq ${srr_id}_pair_1_trimmed.fastq ${srr_id}_unpair_1_trimmed.fastq ${srr_id}_pair_2_trimmed.fastq ${srr_id}_unpair_2_trimmed.fastq HEADCROP:15 CROP:200 LEADING:10 TRAILING:10 SLIDINGWINDOW:5:20 MINLEN:50
+rm ${srr_id}_unpair*
+a=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+aa=`echo $a | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time=$((tt-t))
+
+t=`date +%s`
+# do assembly
+module purge 
+module load spades/py36/3.13
+spades.py -t 1 -1 ${srr_id}_pair_1_trimmed.fastq -2 ${srr_id}_pair_2_trimmed.fastq --careful --cov-cutoff auto -o ${srr_id}_spades_output --phred-offset 33
+rm ${srr_id}_pair_*
+b=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+bb=`echo $b | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time1=$((tt-t))
+
+t=`date +%s`
+# do quality check  
+module purge 
+module load quast/5.0
+quast --fast -o ${srr_id}_quast_output ${srr_id}_spades_output/contigs.fasta
+c=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+cc=`echo $c | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time2=$((tt-t))
+
+t=`date +%s`
+# do filtering 
+# mkdir data_filtered
+filtering.sh ${srr_id}_quast_output/transposed_report.tsv ${srr_id}_spades_output/contigs.fasta data_filtered ${srr_id}
+rm -rf ${srr_id}*_output/
+d=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+dd=`echo $d | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time3=$((tt-t))
+
+t=`date +%s`
+# do mlst
+module purge 
+module load mlst/2.16
+mlst --legacy --scheme <scheme> --csv data_filtered/${srr_id}_contigs.fasta > ${srr_id}_mlst_output.csv
+e=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+ee=`echo $e | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time4=$((tt-t))
+
+echo "$srr_id,$aa,$total_time,$bb,$total_time1,$cc,$total_time2,$dd,$total_time3,$ee,$total_time4" >> output_stats.txt

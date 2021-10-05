@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=50gb
+
+module load emboss/6.6
+
+# directory with contigs
+IN_DIR=$1
+# sra id of genome
+IN_FILE=$2
+# organism
+org=$3
+
+while read line
+do
+compseq -word 2 -outfile ${line}_output ${IN_DIR}/${line}*.fasta
+awk '{print $1,$3}' ${line}_output | tail -n18 | head -n16 | awk '{printf("%s %s \n", $0, "'${line}'") }' >> ${org}_fin_output
+rm ${line}_output 
+done < ${IN_FILE}

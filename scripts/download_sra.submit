@@ -1,0 +1,22 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=30gb
+#SBATCH --time=45:00:00
+
+export OMP_NUM_THREADS=12
+
+# We use parallel-fastq-dump instead of SRAtoolkit fastq-dump because it is faster and gives less intermittent NCBI errors
+module purge
+module load parallel-fastq-dump/0.6
+
+# while read line; do sbatch download_sra.sh SraAccList_${line}.txt.1000 ${line}; done <list_dir 
+# $1 is a list with SRA ids
+while read line
+do
+prefetch ${line} && parallel-fastq-dump --sra-id ${line} --threads 12 --split-3
+# delete prefetch directory
+rm -rf ${line}
+# move data to separate directory
+mv ${line}_*.fastq $2
+done <$1

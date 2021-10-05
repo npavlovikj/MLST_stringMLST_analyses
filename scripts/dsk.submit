@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --time=168:00:00
+#SBATCH --mem=70gb
+
+# kmer value
+kmer=$1
+# organisms since input files start with organism_1_2_100.fastq
+organism=$2
+
+module load dsk/2.2.0
+
+dsk -file ${organism}_1_2_100.fastq -nb-cores 8 -kmer-size ${kmer} -out ${organism}_dsk_reads_kmer_${kmer}
+dsk2ascii -file ${organism}_dsk_reads_kmer_${kmer}.h5 -nb-cores 8 -out ${organism}_dsk_reads_kmer_${kmer}.out

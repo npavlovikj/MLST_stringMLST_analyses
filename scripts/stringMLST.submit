@@ -1,0 +1,31 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=30gb
+
+module purge
+module load stringmlst/0.6
+
+RAW_READS="/directory_raw_reads/"
+
+# $1 is organism
+# $2 is batch (1,2,3)
+# $3 is kmer (10,20,30,35,45,55,65,70,80,90)
+org="$1"
+batch="$2"
+kmer="$3"
+full_dbs_path="$4"
+
+# enter directory because tmp files are created in the current directory
+mkdir ${org}.${kmer}.${batch}
+
+cd ${org}.${kmer}.${batch}
+t=`date +%s`
+stringMLST.py --predict -d ${RAW_READS}/${org}.${batch}/ -p -r -t -x -P ${full_dbs_path} -k ${kmer} -o ${org}.${kmer}.${batch}
+c=`cgget -r memory.usage_in_bytes /slurm/uid_${UID}/job_${SLURM_JOBID}/`
+cc=`echo $c | awk -F: '{print $3}'`
+tt=`date +%s`
+total_time=$((tt-t))
+cd ..
+echo "$org,$batch,$kmer,$cc,$total_time" >> output_stats.txt
