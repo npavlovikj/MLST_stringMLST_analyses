@@ -6755,7 +6755,7 @@ d <- c(100, 100, 89, 100,
 )
 dts <- data.frame("species"=x, "program"=y, "batch"=z, "non"=w, "total"=d)
 dts$percentage <- (dts$non/dts$total)*100
-# Fig 8-B
+# Fig 7-B
 p <- ggplot(dts, aes(x=percentage, y=species, fill=program)) + 
   geom_bar(position="dodge", stat='identity') + facet_wrap(~ batch, ncol=2) +
   theme_bw() + theme(legend.position = "none") +
@@ -6782,7 +6782,7 @@ input$species <- revalue(x = input$species,
 
 input$batch <- as.character(input$batch)
 input$batch <- revalue(x = input$batch, c("100" = "100 genomes", "1000" = "1000 genomes"))
-# Fig 8-A
+# Fig 7-A
 p <- ggplot(input , aes(x=runtime_total_min, y=species, fill=program)) + 
   geom_bar(position="dodge", stat='identity') + facet_wrap(~ batch, ncol=2) +
   theme_bw() + theme(legend.position = "none") +
@@ -6809,7 +6809,7 @@ DFtall$species <- revalue(x = DFtall$species,
                           c("Salmonella enterica" = "Salmonella Typhimurium"))
 DFtall$batch <- revalue(x = DFtall$batch, c("batch_100" = "100 genomes", "batch_1000" = "1000 genomes"))
 # https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
-# Fig 8-C
+# Fig 7-C
 p <- ggplot(data = DFtall, aes(y = Value, x = batch, fill = batch)) +
   # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
   facet_wrap(~species, nrow = 1) + theme_bw() +
@@ -6824,4 +6824,1230 @@ p <- ggplot(data = DFtall, aes(y = Value, x = batch, fill = batch)) +
   theme(legend.title=element_text(size=25, face = "bold")) +
   theme(legend.text=element_text(size=20)) + scale_x_discrete() +
   labs(y = "% Agreement")
+p
+
+
+
+
+
+
+
+
+# S17 Fig, analyses from 23 Salmonella serovars, percentage of miscalls
+in1 <- read.csv("mlst_stringmlst_2293_sub.txt", stringsAsFactors = FALSE)
+in2 <- read.csv("sra_id_serovar.txt", stringsAsFactors = FALSE)
+input <- merge(in1, in2, by = "sra_id")
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_40 <- as.character(data5$stringmlst_40)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_50 <- as.character(data5$stringmlst_50)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_60 <- as.character(data5$stringmlst_60)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst100 = sum(is.na(mlst_100)), 
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer40 = sum(is.na(stringmlst_40)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer50 = sum(is.na(stringmlst_50)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer60 = sum(is.na(stringmlst_60)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            total = n()
+            )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst100/total)*100, 
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_40 = (kmer40/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_50 = (kmer50/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_60 = (kmer60/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100
+            )
+data_long <- gather(data7, combination, percentage, mlst:kmer_90, factor_key=TRUE)
+data_long
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=4) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 40),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 23 Salmonella serovars, percentage of agreement
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_40 = ifelse(data5$mlst_100==data5$stringmlst_40, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_50 = ifelse(data5$mlst_100==data5$stringmlst_50, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_60 = ifelse(data5$mlst_100==data5$stringmlst_60, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_40=c(mean(.$MLST_vs_stringMLST_kmer_40)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_50=c(mean(.$MLST_vs_stringMLST_kmer_50)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_60=c(mean(.$MLST_vs_stringMLST_kmer_60)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100)
+  )
+  )
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_90)
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = kmer, x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+# S17 Fig, analyses from 23 Salmonella serovars, S. saintpaul, percentage of miscalls
+in1 <- read.csv("saintpaul_out_all_100_kmers.txt", stringsAsFactors = FALSE)
+in2 <- read.csv("sra_id_serovar.txt", stringsAsFactors = FALSE)
+input <- merge(in1, in2, by = "sra_id")
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_40 <- as.character(data5$stringmlst_40)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_50 <- as.character(data5$stringmlst_50)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_60 <- as.character(data5$stringmlst_60)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data5$stringmlst_160 <- as.character(data5$stringmlst_160)
+data5$stringmlst_180 <- as.character(data5$stringmlst_180)
+data5$stringmlst_200 <- as.character(data5$stringmlst_200)
+data5$stringmlst_220 <- as.character(data5$stringmlst_220)
+data5$stringmlst_240 <- as.character(data5$stringmlst_240)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst100 = sum(is.na(mlst_100)), 
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer40 = sum(is.na(stringmlst_40)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer50 = sum(is.na(stringmlst_50)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer60 = sum(is.na(stringmlst_60)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            kmer160 = sum(is.na(stringmlst_160)),
+            kmer180 = sum(is.na(stringmlst_180)),
+            kmer200 = sum(is.na(stringmlst_200)),
+            kmer220 = sum(is.na(stringmlst_220)),
+            kmer240 = sum(is.na(stringmlst_240)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst100/total)*100, 
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_40 = (kmer40/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_50 = (kmer50/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_60 = (kmer60/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100,
+            kmer_160 = (kmer160/total)*100,
+            kmer_180 = (kmer180/total)*100,
+            kmer_200 = (kmer200/total)*100,
+            kmer_220 = (kmer220/total)*100,
+            kmer_240 = (kmer240/total)*100
+  )
+out <- merge(input, data7, by = "species")
+data_long <- gather(data7, combination, percentage, mlst:kmer_240, factor_key=TRUE)
+data_long$species[data_long$species == "Saintpaul"] <- "S. Saintpaul"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 23 Salmonella serovars, percentage of agreement
+# same 1, different 0
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_40 = ifelse(data5$mlst_100==data5$stringmlst_40, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_50 = ifelse(data5$mlst_100==data5$stringmlst_50, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_60 = ifelse(data5$mlst_100==data5$stringmlst_60, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0),
+                MLST_vs_stringMLST_kmer_160 = ifelse(data5$mlst_100==data5$stringmlst_160, 1, 0),
+                MLST_vs_stringMLST_kmer_180 = ifelse(data5$mlst_100==data5$stringmlst_180, 1, 0),
+                MLST_vs_stringMLST_kmer_200 = ifelse(data5$mlst_100==data5$stringmlst_200, 1, 0),
+                MLST_vs_stringMLST_kmer_220 = ifelse(data5$mlst_100==data5$stringmlst_220, 1, 0),
+                MLST_vs_stringMLST_kmer_240 = ifelse(data5$mlst_100==data5$stringmlst_240, 1, 0)
+                )
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_40=c(mean(.$MLST_vs_stringMLST_kmer_40)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_50=c(mean(.$MLST_vs_stringMLST_kmer_50)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_60=c(mean(.$MLST_vs_stringMLST_kmer_60)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100),
+                kmer_160=c(mean(.$MLST_vs_stringMLST_kmer_160)*100),
+                kmer_180=c(mean(.$MLST_vs_stringMLST_kmer_180)*100),
+                kmer_200=c(mean(.$MLST_vs_stringMLST_kmer_200)*100),
+                kmer_220=c(mean(.$MLST_vs_stringMLST_kmer_220)*100),
+                kmer_240=c(mean(.$MLST_vs_stringMLST_kmer_240)*100)
+  )
+  )
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_240)
+DFtall$species[DFtall$species == "Saintpaul"] <- "S. Saintpaul"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_40", "kmer_45", "kmer_50", "kmer_55", "kmer_60", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_120", "kmer_140", "kmer_160", "kmer_180", "kmer_200", "kmer_220", "kmer_240")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() + 
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+
+
+# S17 Fig, analyses from 14 pathogens, percentage of miscalls
+input <- read.csv("stringmlst_mlst_12313_all.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst100 = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            total = n()
+            )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst100/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100
+            )
+data_long <- gather(data7, combination, percentage, mlst:kmer_90, factor_key=TRUE)
+data_long
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=4) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 40),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, percentage of agreement
+# same 1, different 0
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100)
+  )
+  )
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_90)
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = kmer, x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecalis 100, percentage of miscalls
+input <- read.csv("Enterococcus_faecalis_all_92.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer110 = sum(is.na(stringmlst_110)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_110 = (kmer110/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100
+  )
+data_long <- gather(data7, combination, percentage, mlst:kmer_140, factor_key=TRUE)
+data_long$species[data_long$species == "Enterococcus_faecalis"] <- "E. faecalis"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecalis 100, percentage of agreement
+# same 1, different 0
+input <- read.csv("Enterococcus_faecalis_all_92.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_110 = ifelse(data5$mlst_100==data5$stringmlst_110, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_110=c(mean(.$MLST_vs_stringMLST_kmer_110)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100)
+  ))
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_140)
+DFtall$species[DFtall$species == "Enterococcus_faecalis"] <- "E. faecalis"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_45", "kmer_55", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_110", "kmer_120", "kmer_140")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecium, percentage of miscalls
+input <- read.csv("Enterococcus_faecium_all_913.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst100 = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer110 = sum(is.na(stringmlst_110)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst100/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_110 = (kmer110/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100
+  )
+data_long <- gather(data7, combination, percentage, mlst:kmer_140, factor_key=TRUE)
+data_long$species[data_long$species == "Enterococcus_faecium"] <- "E. faecium"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecium, percentage of agreement
+# same 1, different 0
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_110 = ifelse(data5$mlst_100==data5$stringmlst_110, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_110=c(mean(.$MLST_vs_stringMLST_kmer_110)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100)
+  )
+  )
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_140)
+DFtall$species[DFtall$species == "Enterococcus_faecium"] <- "E. faecium"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_45", "kmer_55", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_110", "kmer_120", "kmer_140")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecium 100, percentage of miscalls
+input <- read.csv("Enterococcus_faecium_all_92.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer110 = sum(is.na(stringmlst_110)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_110 = (kmer110/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100
+  )
+data_long <- gather(data7, combination, percentage, mlst:kmer_140, factor_key=TRUE)
+data_long$species[data_long$species == "Enterococcus_faecium"] <- "E. faecium"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, Enterococcus_faecium 100, percentage of agreement
+# same 1, different 0
+input <- read.csv("Enterococcus_faecium_all_92.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_110 = ifelse(data5$mlst_100==data5$stringmlst_110, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_110=c(mean(.$MLST_vs_stringMLST_kmer_110)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100)
+  ))
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_140)
+DFtall$species[DFtall$species == "Enterococcus_faecium"] <- "E. faecium"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_45", "kmer_55", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_110", "kmer_120", "kmer_140")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+# S17 Fig, analyses from 14 pathogens, Helicobacter_pylori, percentage of miscalls
+input <- read.csv("Helicobacter_pylori_all_874.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst100 = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer110 = sum(is.na(stringmlst_110)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst100/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_110 = (kmer110/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100
+  )
+data_long <- gather(data7, combination, percentage, mlst:kmer_140, factor_key=TRUE)
+data_long$species[data_long$species == "Helicobacter_pylori"] <- "H. pylori"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, Helicobacter_pylori, percentage of agreement
+# same 1, different 0
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_110 = ifelse(data5$mlst_100==data5$stringmlst_110, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_110=c(mean(.$MLST_vs_stringMLST_kmer_110)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100)
+  )
+  )
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_140)
+DFtall$species[DFtall$species == "Helicobacter_pylori"] <- "H. pylori"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_45", "kmer_55", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_110", "kmer_120", "kmer_140")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
+p
+
+
+
+# S17 Fig, analyses from 14 pathogens, Helicobacter_pylori 100, percentage of miscalls
+input <- read.csv("Helicobacter_pylori_all_81.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data6 <- data5 %>% 
+  group_by(species) %>% 
+  summarise(mlst = sum(is.na(mlst_100)),
+            kmer20 = sum(is.na(stringmlst_20)),
+            kmer30 = sum(is.na(stringmlst_30)),
+            kmer35 = sum(is.na(stringmlst_35)),
+            kmer45 = sum(is.na(stringmlst_45)),
+            kmer55 = sum(is.na(stringmlst_55)),
+            kmer65 = sum(is.na(stringmlst_65)),
+            kmer70 = sum(is.na(stringmlst_70)),
+            kmer80 = sum(is.na(stringmlst_80)),
+            kmer90 = sum(is.na(stringmlst_90)),
+            kmer100 = sum(is.na(stringmlst_100)),
+            kmer110 = sum(is.na(stringmlst_110)),
+            kmer120 = sum(is.na(stringmlst_120)),
+            kmer140 = sum(is.na(stringmlst_140)),
+            total = n()
+  )
+data7 <- data6 %>% 
+  group_by(species) %>% 
+  summarise(mlst = (mlst/total)*100,
+            kmer_20 = (kmer20/total)*100,
+            kmer_30 = (kmer30/total)*100,
+            kmer_35 = (kmer35/total)*100,
+            kmer_45 = (kmer45/total)*100,
+            kmer_55 = (kmer55/total)*100,
+            kmer_65 = (kmer65/total)*100,
+            kmer_70 = (kmer70/total)*100,
+            kmer_80 = (kmer80/total)*100,
+            kmer_90 = (kmer90/total)*100,
+            kmer_100 = (kmer100/total)*100,
+            kmer_110 = (kmer110/total)*100,
+            kmer_120 = (kmer120/total)*100,
+            kmer_140 = (kmer140/total)*100
+  )
+data_long <- gather(data7, combination, percentage, mlst:kmer_140, factor_key=TRUE)
+data_long$species[data_long$species == "Helicobacter_pylori"] <- "H. pylori"
+p <- ggplot(data_long , aes(x=combination, y=percentage)) + ylim(0, 100) + 
+  geom_bar(position="dodge", stat='identity') + facet_wrap(~ species, ncol=1) +
+  theme_bw() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 80),
+        axis.title.y = element_text(size = 90),
+        axis.text=element_text(size=80),
+        axis.text.y = element_text(size = 80),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90)) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(y = "% of non-classified STs")
+p
+
+# S17 Fig, analyses from 14 pathogens, Helicobacter_pylori 100, percentage of agreement
+# same 1, different 0
+input <- read.csv("Helicobacter_pylori_all_81.txt", stringsAsFactors = FALSE)
+# - and 0 ST are NA
+data1 <- input %>%
+  mutate_all(na_if, "-") %>%
+  mutate_all(na_if, "0") 
+# merge columns program_batch into one  
+data2 <- transform(data1, program_kmer=paste(program, kmer, sep="_"))
+# convert program_batch row to column
+data3 <- data2 %>%
+  spread(program_kmer, st)
+data4 <- aggregate(. ~ sra_id + species, data=data3,
+                   FUN=function(x) x[!is.na(x)][1], na.action=na.pass)
+drops <- c("program","kmer")
+data5 <- data4[ , !(names(data4) %in% drops)]
+colnames(data5)[1] <- "sra_id"
+data5$mlst_100 <- as.character(data5$mlst_100)
+data5$stringmlst_20 <- as.character(data5$stringmlst_20)
+data5$stringmlst_30 <- as.character(data5$stringmlst_30)
+data5$stringmlst_35 <- as.character(data5$stringmlst_35)
+data5$stringmlst_45 <- as.character(data5$stringmlst_45)
+data5$stringmlst_55 <- as.character(data5$stringmlst_55)
+data5$stringmlst_65 <- as.character(data5$stringmlst_65)
+data5$stringmlst_70 <- as.character(data5$stringmlst_70)
+data5$stringmlst_80 <- as.character(data5$stringmlst_80)
+data5$stringmlst_90 <- as.character(data5$stringmlst_90)
+data5$stringmlst_100 <- as.character(data5$stringmlst_100)
+data5$stringmlst_110 <- as.character(data5$stringmlst_110)
+data5$stringmlst_120 <- as.character(data5$stringmlst_120)
+data5$stringmlst_140 <- as.character(data5$stringmlst_140)
+data5[is.na(data5)] <- -3
+df <- transform(data5, MLST_vs_stringMLST_kmer_20 = ifelse(data5$mlst_100==data5$stringmlst_20, 1, 0),
+                MLST_vs_stringMLST_kmer_30 = ifelse(data5$mlst_100==data5$stringmlst_30, 1, 0),
+                MLST_vs_stringMLST_kmer_35 = ifelse(data5$mlst_100==data5$stringmlst_35, 1, 0),
+                MLST_vs_stringMLST_kmer_45 = ifelse(data5$mlst_100==data5$stringmlst_45, 1, 0),
+                MLST_vs_stringMLST_kmer_55 = ifelse(data5$mlst_100==data5$stringmlst_55, 1, 0),
+                MLST_vs_stringMLST_kmer_65 = ifelse(data5$mlst_100==data5$stringmlst_65, 1, 0),
+                MLST_vs_stringMLST_kmer_70 = ifelse(data5$mlst_100==data5$stringmlst_70, 1, 0),
+                MLST_vs_stringMLST_kmer_80 = ifelse(data5$mlst_100==data5$stringmlst_80, 1, 0),
+                MLST_vs_stringMLST_kmer_90 = ifelse(data5$mlst_100==data5$stringmlst_90, 1, 0),
+                MLST_vs_stringMLST_kmer_100 = ifelse(data5$mlst_100==data5$stringmlst_100, 1, 0),
+                MLST_vs_stringMLST_kmer_110 = ifelse(data5$mlst_100==data5$stringmlst_110, 1, 0),
+                MLST_vs_stringMLST_kmer_120 = ifelse(data5$mlst_100==data5$stringmlst_120, 1, 0),
+                MLST_vs_stringMLST_kmer_140 = ifelse(data5$mlst_100==data5$stringmlst_140, 1, 0))
+dts <- df %>%
+  group_by(species) %>%
+  do(data.frame(kmer_20=c(mean(.$MLST_vs_stringMLST_kmer_20)*100),
+                kmer_30=c(mean(.$MLST_vs_stringMLST_kmer_30)*100),
+                kmer_35=c(mean(.$MLST_vs_stringMLST_kmer_35)*100),
+                kmer_45=c(mean(.$MLST_vs_stringMLST_kmer_45)*100),
+                kmer_55=c(mean(.$MLST_vs_stringMLST_kmer_55)*100),
+                kmer_65=c(mean(.$MLST_vs_stringMLST_kmer_65)*100),
+                kmer_70=c(mean(.$MLST_vs_stringMLST_kmer_70)*100),
+                kmer_80=c(mean(.$MLST_vs_stringMLST_kmer_80)*100),
+                kmer_90=c(mean(.$MLST_vs_stringMLST_kmer_90)*100),
+                kmer_100=c(mean(.$MLST_vs_stringMLST_kmer_100)*100),
+                kmer_110=c(mean(.$MLST_vs_stringMLST_kmer_110)*100),
+                kmer_120=c(mean(.$MLST_vs_stringMLST_kmer_120)*100),
+                kmer_140=c(mean(.$MLST_vs_stringMLST_kmer_140)*100)
+  ))
+DFtall <- dts %>% gather(key = kmer, value = Value, kmer_20:kmer_140)
+DFtall$species[DFtall$species == "Helicobacter_pylori"] <- "H. pylori"
+kmer_35_avg_data <- DFtall %>%
+  filter(kmer == "kmer_35") %>%
+  group_by(species) %>%
+  summarise(avg = mean(Value))
+level_order <- c("kmer_20", "kmer_30", "kmer_35", "kmer_45", "kmer_55", "kmer_65", "kmer_70", "kmer_80", "kmer_90", "kmer_100", "kmer_110", "kmer_120", "kmer_140")
+# https://community.rstudio.com/t/help-with-making-plot-with-multiple-columns/50763
+p <- ggplot(data = DFtall, aes(y = factor(kmer, level = level_order), x = Value, fill = kmer)) + geom_boxplot(position = "dodge") + xlim(0,100) +
+  # p + scale_color_manual(breaks = c("1", "2", "3"), values=c("darkred", "darkblue", "darkgreen"))
+  facet_wrap(~species, ncol = 4) + theme_bw() +
+  theme(legend.position = "none") +
+  geom_vline(data = kmer_35_avg_data, aes(xintercept = avg), linetype = "longdash", color = "black") +
+  theme(axis.title.x = element_text(size = 60),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 40),
+        axis.title.y = element_text(size = 60),
+        axis.text=element_text(size=40),
+        axis.text.y = element_text(size = 30),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60)) +
+  theme(axis.line = element_line(colour = "black")) +
+  labs(x = "% agreement", y = "MLST vs. stringMLST with different kmer values")
 p
