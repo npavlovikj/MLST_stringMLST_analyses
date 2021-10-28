@@ -1,0 +1,10 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=50gb
+
+module purge
+module load prokka/1.14
+
+prokka --kingdom Bacteria --locustag srr_id --outdir prokka_output --prefix srr_id --force contigs.fasta
