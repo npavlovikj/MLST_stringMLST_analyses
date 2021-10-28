@@ -1,0 +1,10 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=168:00:00
+#SBATCH --mem=50gb
+
+module purge
+module load fasttree/2.1
+
+FastTreeMP -nt -pseudo -fastest < core_gene_alignment.aln > phylogeny_core_gene_alignment.tree
