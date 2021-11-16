@@ -1,0 +1,3 @@
+# Replace ProkEvo_dir with the absolute path to the current directory
+sra_ids.txt file:///ProkEvo_dir/sra_ids.txt site="local"
+prokevo_stringmlst.yml file:///ProkEvo_dir/prokevo_sting.yml site="local"

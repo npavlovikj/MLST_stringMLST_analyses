@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Replace ProkEvo_dir with the absolute path to the current directory
+
+tr ex_conda_run {
+    site local-hcc {
+        pfn "file:///ProkEvo_dir/scripts/create_conda_env.sh"
+    }
+}
+
+tr ex_sra_run {
+    site local-hcc {
+        pfn "file:///ProkEvo_dir/scripts/download_sra.sh"
+    }
+}
+
+tr ex_stringmlst_db_run {
+    site local-hcc {
+        pfn "file:///ProkEvo_dir/scripts/sting_db.sh"
+    }
+}
+
+tr ex_stringmlst_run {
+    site local-hcc {
+        pfn "file:///ProkEvo_dir/scripts/sting.sh"
+    }
+}
+
+tr ex_merge_stringmlst {
+    site local-hcc {
+        pfn "file:///ProkEvo_dir/scripts/merge_sting.sh"
+    }
+}
+
+tr ex_cat {
+    site local-hcc {
+        pfn "/bin/cat"
+    }
+}
